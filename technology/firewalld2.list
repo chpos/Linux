@@ -1,0 +1,422 @@
+
+
+
+firewalld服务的主配置文件是firewalld.conf，防火墙策略的配置文件是以xml格式为主，存放在以下两个目录里
+
+/etc/firewalld          用户配置文件
+
+/usr/lib/firewalld      系统配置文件，预定义配置文件
+
+默认服务存放在： 每个服务在系统中都有一个服务文件，存放在 /usr/lib/firewalld/services/ 目录
+
+
+禁用旧版防火墙服务
+systemctl mask iptables
+systemctl mask ip6tables
+
+启动firewalld防火墙, 并加入开机自启动服务
+systemctl start firewalld
+systemctl enable firewalld
+
+
+查看防火墙状态：    systemctl status firewalld         firewall-cmd --state
+
+查看版本：         firewall-cmd --version
+
+禁用开机启动：     systemctl disable firewalld
+
+关闭防火墙：       systemctl stop firewalld
+
+重启防火墙：       systemctl restart firewalld          systemctl restart firewalld.service
+
+
+
+firewalld默认有 9 个区域
+
+trusted  home  internal  work  public  external  dmz  block  drop 
+
+
+如不指定 --zone 则操作默认区域；  指定 --zone  则操作指定区域      格式：  --zone=区域名
+
+如不指定 --permanent  则立即生效，重启失效  指定 --permanent  则需要重载配置或者重启才能生效，永久生效
+
+
+查看所有的区域：            firewall-cmd --get-zones
+
+查看所有区域的设置：        firewall-cmd --list-all-zones
+
+修改默认区域，此为永久设置：   firewall-cmd --set-default-zone=trusted
+
+
+查看默认区域是哪个区域：     firewall-cmd --get-default-zone
+
+查看区域的设置：            firewall-cmd --list-all            firewall-cmd --zone=trusted --list-all
+
+重载防火墙配置：            firewall-cmd --reload 
+
+
+查看系统所有的活动区域设置信息：      firewall-cmd --get-active-zones
+
+
+查看指定网卡所在的区域：             firewall-cmd --get-zone-of-interface=eth0
+
+修改指定网卡区域：              firewall-cmd --change-interface=eth0 --zone=public --permanent
+
+添加删除 网卡 到区域：           firewall-cmd --add/remove-interface=eth0 --zone=public
+
+firewall-cmd --remove-interface=eth0 --zone=public --permanent
+
+
+服务： firewall-cmd --add-service=https --zone=public --permanent 
+
+端口： firewall-cmd --add-port=443/udp --zone=public  --permanent
+
+协议:  firewall-cmd --add-protocol=icmp --zone=public --permanent
+
+拒绝指定ip的所有流量：
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="23.99.100.15" drop" --zone=drop --permanent
+
+禁ping:  firewall-cmd --permanent --add-rich-rule='rule protocol value=icmp drop'
+
+
+
+查看开放端口：        firewall-cmd --list-ports            firewall-cmd --zone=public --list-ports
+
+查看开放协议：        firewall-cmd --list-protocols        firewall-cmd --zone=public --list-protocols
+
+查看开放服务：        firewall-cmd --list-services         firewall-cmd --zone=public --list-services
+
+查看所有预设的服务：   firewall-cmd --get-services
+
+
+验证某个端口是否开放：   firewall-cmd --query-ports 22
+
+
+firewall-cmd --query-service=ssh      firewall-cmd --zone=public --query-service=ftp
+
+
+
+
+
+重载防火墙配置：    firewall-cmd --reload         firewall-cmd --complete-reload
+
+#                    无需断开连接即生效                需要断开连接才生效
+
+
+查看开放的端口：    firewall-cmd --list-ports            firewall-cmd --zone=public --list-ports
+
+增加删除端口：      --add-port=<端口号/协议>   --remove-port=<端口号/协议>     单次指定tcp和udp
+
+firewall-cmd --add-port=443/tcp             firewall-cmd --zone=public --add-port=443/udp --permanent
+
+
+
+
+
+###########################################  Prots(端口) #########################################
+
+查看所有区域设置：                   firewall-cmd --list-all-zones
+
+查看指定区域所有设置：               firewall-cmd --zone=public --list-all  
+
+查看活动区域设置：                   firewall-cmd --get-active-zones
+
+查看默认区域：                       firewall-cmd --get-default-zone
+
+重载防火墙配置：                     firewall-cmd --reload
+
+
+查看指定区域开放的端口：              firewall-cmd --list-ports        firewall-cmd --zone=public --list-ports
+
+
+格式：
+
+--add-port=<端口号/协议>       设置区域允许该端口的流量
+
+--remove-port=<端口号/协议>    设置区域不再允许该端口的流量
+
+--list-port                   显示区域允许的端口
+
+
+增加端口：    
+
+firewall-cmd --add-port=5421/tcp --permanent         firewall-cmd --zone=public --add-port=443/udp --permanent
+
+
+添加或删除区间段：
+
+firewall-cmd --zone=public --add-port=6001-6020/tcp --permanent
+
+firewall-cmd --zone=public --remove-port=6001-6020/tcp --permanent
+
+
+
+###########################################  services（服务）  #########################################
+
+
+查看所有区域设置：                   firewall-cmd --list-all-zones
+
+查看指定区域所有设置：               firewall-cmd --zone=public --list-all  
+
+查看活动区域设置：                   firewall-cmd --get-active-zones
+
+查看默认区域区域：                   firewall-cmd --get-default-zone
+
+重载防火墙配置：                     firewall-cmd --reload
+
+
+每个服务在系统中都有一个服务文件，存放在 /usr/lib/firewalld/services/ 目录
+
+
+查看全部预设的服务：        firewall-cmd --get-services
+
+此时将会列出   /usr/lib/firewalld/services/   目录中所有的服务名称
+
+
+查看指定区域开放的服务：     firewall-cmd --zone=public --list-services
+
+
+
+格式：
+
+--add-service=<service name>        添加
+
+--remove-service=<service name>     移除
+
+
+firewall-cmd --add-service=https
+
+firewall-cmd --add-service=https --zone=public --permanent                开启某个服务
+
+firewall-cmd --remove-service=dhcpv6-client --zone=public --permanent     关闭某个服务
+
+
+设置某些IP允许访问某个服务：
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="192.168.0.4/24" service name="ssh" accept" --zone=public --permanent 
+
+firewall-cmd --remove-rich-rule="rule family="ipv4" source address="192.168.0.4/24" service name="ssh" accept" --zone=public --permanent 
+
+
+查询某个服务是否开放：
+
+firewall-cmd --query-service=ssh --zone=public
+
+
+
+开放 删除 多个服务
+
+firewall-cmd --add-service=ssh --add-service=https --zone=public --permanent
+
+firewall-cmd --remove-service=ssh --remove-service=https --zone=public --permanent
+
+或
+
+firewall-cmd --remove-service={ssh,dhcpv6-client} --zone=public --permanent
+
+
+
+
+##############################################  source（源IP）  #######################################
+
+
+
+查看所有区域设置：                   firewall-cmd --list-all-zones
+
+查看指定区域所有设置：               firewall-cmd --zone=public --list-all  
+
+查看活动区域设置：                   firewall-cmd --get-active-zones
+
+查看默认区域区域：                   firewall-cmd --get-default-zone
+
+重载防火墙配置：                     firewall-cmd --reload
+
+
+查看指定区域所有设置：       firewall-cmd --zone=public --list-all
+
+查看指定区域开放的源：     firewall-cmd --zone=public --list-sources
+
+
+添加来源是10.0.0.0/24网段，将其加入白名单
+
+firewall-cmd --add-source=10.0.0.0/24 --zone=trusted
+
+firewall-cmd --remove-source=23.21.145.15 --zone=trusted --permanen
+
+拒绝10.0.0.0/24网段的所有服务
+
+firewall-cmd   --add-source=10.0.0.0/24   --zone=drop --permanen
+
+firewall-cmd   --add-source=23.21.010.15 --zone=drop --permanen
+
+取消拒绝10.0.0.0/24网段的所有服务
+
+firewall-cmd   --remove-source=10.0.0.0/24   --zone=drop
+
+222.0.0.0/8
+
+firewall-cmd --add-source=218.0.0.0/8 --zone=drop --permanen
+
+##############################################  protocols（协议） ############################################
+
+
+查看所有区域设置：                   firewall-cmd --list-all-zones
+
+查看指定区域所有设置：               firewall-cmd --zone=public --list-all  
+
+查看活动区域设置：                   firewall-cmd --get-active-zones
+
+查看默认区域区域：                   firewall-cmd --get-default-zone
+
+重载防火墙配置：                     firewall-cmd --reload
+
+
+
+格式：
+
+--add-protocol=<protocol>       添加
+
+--remove-protocol=<protocol>    移除
+
+
+查看指定区域所有设置：      firewall-cmd --zone=public --list-all
+
+查看指定区域开放的协议：    firewall-cmd --zone=public --list-protocol
+
+
+
+firewall-cmd --add-protocol=<protocol>            允许协议 (例：icmp，即允许ping)
+
+firewall-cmd --zone=public --add-protocol=icmp --permanen
+
+firewall-cmd --remove-protocol=<protocol>         移除协议
+
+
+
+#############################################  rich rules  ##############################################
+
+
+查看所有区域设置：                   firewall-cmd --list-all-zones
+
+查看指定区域所有设置：               firewall-cmd --zone=public --list-all  
+
+查看活动区域设置：                   firewall-cmd --get-active-zones
+
+查看默认区域：                       firewall-cmd --get-default-zone
+
+重载防火墙配置：                     firewall-cmd --reload
+
+
+
+查看所有rich rules：   firewall-cmd --list-rich-rules
+
+格式：
+
+--add-rich-rule       增加
+
+--remove-rich-rule    移除
+
+
+将 accept 设置为 reject 表示拒绝，设置为 drop 表示直接丢弃（会返回timeout连接超时）
+
+
+允许指定ip的所有流量         支持 source address 设置为网段     add 改为 remove 即是移除
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" accept" --permanen     允许来自IP的所有流量
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" drop" --permanen       丢弃来自IP的所有流量
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="32.99.10.15" drop" --zone=drop --permanen 
+
+
+允许指定ip的指定协议         支持 source address 设置为网段     add 改为 remove 即是移除
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" protocol value="<protocol>" accept" --permanen
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" protocol value="<protocol>" drop" --permanen
+
+允许指定 IP 的指定协议           丢弃指定 IP 的指定协议
+
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="192.168.2.208" protocol value="icmp" accept"
+
+允许192.168.2.208主机的icmp协议，即允许192.168.2.208主机ping
+
+
+
+
+允许指定ip访问指定服务        支持 source address 设置为网段    add 改为 remove 即是移除
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" service name="<service name>" accept" --permanen
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="192.168.2.208" service name="ssh" accept" --permanen
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" service name="<service name>" drop"
+
+
+允许/拒绝 192.168.2.208 主机访问ssh服务
+
+
+firewall-cmd --add-rich-rule="rule service name=ftp limit value=2/m accept" --zone=public --permanen
+
+每分钟允许2个新连接访问ftp服务
+
+
+
+firewall-cmd --add-rich-rule="rule service name=ftp log limit value="1/m" audit accept"
+
+允许新的ipv4和ipv6连接ftp，并使用日志和审核，每分钟允许访问一次
+
+
+firewall-cmd --add-rich-rule="rule family=ipv4 source address=192.168.2.0/24 reject" --timeout=10
+
+拒绝来自192.168.2.0/24网段的连接，10秒后自动取消
+
+
+firewall-cmd --add-rich-rule="rule family=ipv4 source address=192.168.2.0/24 forward-port port=80 protocol=tcp to-port=22" --zone=public
+
+将来自192.168.2.0/24网段访问本机80端口的流量转发到本机的22端口
+
+
+firewall-cmd --add-rich-rule="rule family=ipv4 source address=192.168.2.0/24 forward-port port=80 protocol=tcp to-port=22 to-addr=192.168.2.208" --zone=public
+
+将来自192.168.2.0/24网段访问本地80端口的流量转发到192.168.2.208主机的22端口
+
+
+
+允许指定ip访问指定端口         支持 source address 设置为网段     add 改为 remove 即是移除
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" port protocol="<port protocol>" port="<port>" accept" --permanen
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="<ip>" port protocol="<port protocol>" port="<port>" drop" --permanen
+
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="192.168.2.1" port protocol="tcp" port="22" accept"
+
+允许/拒绝 192.168.2.1主机访问22端口
+
+
+
+
+firewall-cmd --remove-rich-rule="rule family="ipv4" source address="8.92.165.15" port protocol="tcp" port="5421" accept" --permanen
+
+
+
+应急命令：
+
+
+
+firewall-cmd --panic-on        拒绝所有流量，远程连接会立即断开，只有本地能登陆
+
+firewall-cmd --panic-off       取消应急模式，但需要重启 firewalld 后才可以远程ssh
+
+firewall-cmd --query-panic     查看是否为应急模式
+
+
+
+添加一个新的zone
+
+firewall-cmd  --new-zone=test  --permanent
+
+删除zone
+
+firewall-cmd  --delete-zone=test --permanent
