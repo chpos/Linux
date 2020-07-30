@@ -1,0 +1,101 @@
+
+####  常见写法
+
+查看默认区域是哪个区域：       firewall-cmd --get-default-zone
+
+查看指定区域所有设置：         firewall-cmd --zone=public --list-all 
+
+查看所有区域设置：            firewall-cmd --list-all-zones
+
+查看活动区域设置：            firewall-cmd --get-active-zones
+
+重载防火墙配置：              firewall-cmd --reload
+
+
+服务： firewall-cmd --add-service=https --zone=public --permanent 
+
+端口： firewall-cmd --add-port=443/udp --zone=public  --permanent
+
+协议:  firewall-cmd --add-protocol=icmp --zone=public --permanent
+
+拒绝指定ip的所有流量：
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="23.99.100.15" drop" --zone=drop --permanent
+
+禁ping:  firewall-cmd --permanent --add-rich-rule='rule protocol value=icmp drop'
+
+
+
+
+#####  总体讲解
+
+systemctl是CentOS7的服务管理工具中主要的工具，它融合之前service和chkconfig的功能于一体
+
+Firewall防火墙是在RHEL7.0开始加入到系统中的，是系统安装后默认使用的防火墙工具。它是基于iptables工作的，可以说firewall就是iptables的一个外壳。我们操作firewall时，实质上是由firewall生成了iptables命令，给iptables执行
+
+iptables的防火墙策略是交由内核层面的netfilter网络过滤器来处理的，而firewalld则是交由内核层面的nftables包过滤框架来处理
+
+firewall除了external和dmz外，其余七个区域都是针对本机服务做保护的，即允许或拒绝的都访问本机的服务，不做路由转发管理
+
+Firewall采用区域式管理机制，共有九大区域，通信时以网卡所在的区域为生效区域，审核规则，但 source 的规则更高
+
+
+
+Firewalld规则的优先级：
+
+对于一个接收到的请求具体使用哪个zone(区域)，firewalld是通过三种方式来判断的：
+
+第一、 source，根据 source 来源地址判断，source 的优先级最高，通常按照所在的区域执行，无视其它区域设置，匹配规则时，优先查看 source 规则，不在查看网卡所在的区域了
+
+第二、 Interface，匹配接收请求的网卡的区域，例请求走 eth0 网卡，则根据eth0网卡所在区域判断规则
+
+第三、 firewalld配置的默认区域（zone），如果以上两种规则都没有匹配上，则匹配第三种规则，匹配默认区域
+
+
+注： 这三个方式的优先级按顺序依次降低，也就是说如果按照source可以找到就不会再按interface去找，如果前两个都找不到才会使用第三个默认区域
+
+一个网卡仅能绑定一个区域，但一个区域可以绑定多个网卡，网卡可以在默认区域，也可以不在，如网卡在默认区域，则以上二三规则合一，如果不在，则先二在三，一般来说，规则在网卡所在的区域就可以匹配成功
+
+各个区域基本都可以同时工作，可以在不同区域设置不同规则，根据匹配优先级匹配，活动区域可以是一个，也可以是多个，一般来说，网卡所在的区域为活动区域，也可以通过source添加设置，例：firewall-cmd--add-source=1.1.1.1--zone=drop,禁止1.1.1.1的所有流量，则drop也为活动区域，工作的区域则为活动区域
+
+相同的 source IP只能作用在一个区域，如果重复则会冲突，报错
+
+
+
+在 firewalld 执行命令中，如果规则加了 --permanent 参数，则规则不会立即生效，需要重载配置才能生效，如果规则没有 --permanent 参数，则规则立刻生效，重启服务器后和重载配置后，都将失效，这个称为 firewalld 的运行模式和永久模式
+
+重载配置：firewall-cmd --reload
+
+
+rich rules：规则根据网卡所在区域和默认区域进行匹配，在网卡所在区域或默认区域中，优先级最高，高于，端口，协议，服务，
+相同规则，拒绝的优先级高于允许的优先级，如果 rich rules 不在网卡所在区域和默认区域中，则 rich rules 不生效
+
+FirewallD的默认区域是public，转移默认区域的时候，也要注意网卡所在的区域
+
+
+
+根据区域的信任级别从不信任到信任
+
+drop：     删除所有传入连接，而无任何通知。仅允许传出连接
+block：    所有传入连接均被拒绝，其中icmp-host-prohibited用于IPv4，icmp6-adm-prohibited于IPv6n。仅允许传出连接
+public：   用于不受信任的公共区域。您不信任网络上的其他计算机，但是可以允许选择的传入连接
+external： 用于在系统充当网关或路由器时启用了NAT伪装的外部网络。仅允许选择的传入连接
+internal： 当系统充当网关或路由器时，用于内部网络。网络上的其他系统通常是受信任的。仅允许选择的传入连接
+dmz：      用于非军事区中访问网络其余部分的计算机。仅允许选择的传入连接
+work：     用于工作机。网络上的其他计算机通常是受信任的。仅允许选择的传入连接
+home：     用于家用机器。网络上的其他计算机通常是受信任的。仅允许选择的传入连接
+trusted：  接受所有网络连接。信任网络中的所有计算机
+
+
+
+Target：               目标
+icmp-block-inversion：    ICMP协议类型黑白名单开关（yes/no）
+Interfaces：      关联的网卡接口
+sources：         来源，可以是IP地址，也可以是mac地址
+services：        允许的服务
+ports：           允许的目标端口，即本地开放的端口
+protocols：       允许通过的协议
+masquerade：      是否允许伪装（yes/no），可改写来源IP地址及mac地址
+forward-ports：   允许转发的端口
+source-ports：    允许的来源端口
+icmp-blocks：可添加ICMP类型，当icmp-block-inversion为no时，这些ICMP类型被拒绝；当icmp-block-inversion为yes时，这些ICMP类型被允许
+rich rules：     富规则，即更细致、更详细的防火墙规则策略，它的优先级在所有的防火墙策略中也是最高的。
