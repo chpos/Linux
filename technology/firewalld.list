@@ -73,7 +73,7 @@ FirewallD的默认区域是public，转移默认区域的时候，也要注意�
 
 
 
-根据区域的信任级别从不信任到信任
+firewalld 的所有区域，根据信任级别从不信任到信任
 
 drop：     删除所有传入连接，而无任何通知。仅允许传出连接
 block：    所有传入连接均被拒绝，其中icmp-host-prohibited用于IPv4，icmp6-adm-prohibited于IPv6n。仅允许传出连接
