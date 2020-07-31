@@ -19,7 +19,7 @@
 协议:  firewall-cmd --add-protocol=icmp --zone=public --permanent
 
 拒绝指定ip的所有流量：
-firewall-cmd --add-rich-rule="rule family="ipv4" source address="23.99.100.15" drop" --zone=drop --permanent
+firewall-cmd --add-rich-rule="rule family="ipv4" source address="1.1.1.1" drop" --zone=drop --permanent
 
 禁ping:  firewall-cmd --permanent --add-rich-rule='rule protocol value=icmp drop'
 
@@ -44,7 +44,7 @@ Firewalld规则的优先级：
 
 对于一个接收到的请求具体使用哪个zone(区域)，firewalld是通过三种方式来判断的：
 
-第一、 source，根据 source 来源地址判断，source 的优先级最高，通常按照所在的区域执行，无视其它区域设置，匹配规则时，优先查看 source 规则，不在查看网卡所在的区域了
+第一、 source，根据 source 来源地址判断，source 的优先级最高，可以设置在任意区域，通常按照所在区域的规则执行，无视其它区域设置，匹配规则时，优先查看 source 规则，不在查看网卡所在的区域了
 
 第二、 Interface，匹配接收请求的网卡的区域，例请求走 eth0 网卡，则根据eth0网卡所在区域判断规则
 
@@ -55,7 +55,7 @@ Firewalld规则的优先级：
 
 一个网卡仅能绑定一个区域，但一个区域可以绑定多个网卡，网卡可以在默认区域，也可以不在，如网卡在默认区域，则以上二三规则合一，如果不在，则先二在三，一般来说，规则在网卡所在的区域就可以匹配成功
 
-各个区域基本都可以同时工作，可以在不同区域设置不同规则，根据匹配优先级匹配，活动区域可以是一个，也可以是多个，一般来说，网卡所在的区域为活动区域，也可以通过source添加设置，例：firewall-cmd--add-source=1.1.1.1--zone=drop,禁止1.1.1.1的所有流量，则drop也为活动区域，工作的区域则为活动区域
+各个区域基本都可以同时工作，可以在不同区域设置不同规则，根据匹配优先级匹配，活动区域可以是一个，也可以是多个，一般来说，网卡所在的区域为活动区域，也可以通过source添加设置，例：firewall-cmd--add-source=1.1.1.1--zone=drop,禁止1.1.1.1的所有流量，则drop也为活动区域，工作的区域则为活动区域，这样就实现了 firewalld 的灵活性，多个区域共同作用，同时生效，工作
 
 相同的 source IP只能作用在一个区域，如果重复则会冲突，报错
 
@@ -87,6 +87,8 @@ trusted：  接受所有网络连接。信任网络中的所有计算机
 
 
 
+区域规则参数解读
+
 Target：               目标
 icmp-block-inversion：    ICMP协议类型黑白名单开关（yes/no）
 Interfaces：      关联的网卡接口
@@ -99,3 +101,7 @@ forward-ports：   允许转发的端口
 source-ports：    允许的来源端口
 icmp-blocks：可添加ICMP类型，当icmp-block-inversion为no时，这些ICMP类型被拒绝；当icmp-block-inversion为yes时，这些ICMP类型被允许
 rich rules：     富规则，即更细致、更详细的防火墙规则策略，它的优先级在所有的防火墙策略中也是最高的。
+
+
+
+####  详解    待更新，修订                    
